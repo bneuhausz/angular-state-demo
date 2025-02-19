@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { BooksState } from "../book-state";
-import { debounceTime, distinctUntilChanged, filter, map, merge, startWith, switchMap, tap } from "rxjs";
+import { debounceTime, distinctUntilChanged, map, merge, startWith, switchMap, tap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BookService } from "../book.service";
 import { FormControl } from "@angular/forms";
@@ -9,7 +9,7 @@ import { FormControl } from "@angular/forms";
 export class NativeFeaturesService {
   readonly #bookService = inject(BookService);
   filterControl = new FormControl();
-  orderControl = new FormControl<'asc' | 'desc'>('asc');
+  orderControl = new FormControl<'asc' | 'desc'>('asc', { nonNullable: true });
 
   readonly #state = signal<BooksState>({
     books: [],
@@ -29,7 +29,6 @@ export class NativeFeaturesService {
       map((query: string) => ({ query }))
     ),
     this.orderControl.valueChanges.pipe(
-      filter((order): order is 'asc' | 'desc' => order !== null),
       map(order => ({ order }))
     )
   ).pipe(
