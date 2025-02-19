@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { BooksState } from "../book-state";
-import { debounceTime, distinctUntilChanged, startWith, Subject, switchMap, tap } from "rxjs";
+import { debounceTime, distinctUntilChanged, filter, map, merge, startWith, switchMap, tap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BookService } from "../book.service";
 import { FormControl } from "@angular/forms";
@@ -22,64 +22,35 @@ export class NativeFeaturesService {
   filter = computed(() => this.#state().filter);
   booksCount = computed(() => this.books().length);
 
-  getFilteredBooks$ = new Subject()
-    .pipe(
-      takeUntilDestroyed(),
-      startWith(null),
-      tap(() => this.#state.update((state) => ({
-        ...state,
-        isLoading: true,
-      }))),
-      switchMap(() => this.#bookService.loadBooks(this.filter())),
-    );
-
-  updateQuery$ = this.filterControl.valueChanges
-    .pipe(
-      takeUntilDestroyed(),
+  filterChanges$ = merge(
+    this.filterControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      tap((query) => this.#state.update((state) => ({
+      map((query: string) => ({ query }))
+    ),
+    this.orderControl.valueChanges.pipe(
+      filter((order): order is 'asc' | 'desc' => order !== null),
+      map(order => ({ order }))
+    )
+  ).pipe(
+    takeUntilDestroyed(),
+    startWith(this.#state().filter),
+    tap(filter => this.#state.update(state => ({
+      ...state,
+      isLoading: true,
+      filter: { ...state.filter, ...filter }
+    }))),
+    switchMap(() => this.#bookService.loadBooks(this.filter())),
+    tap((books) =>
+      this.#state.update((state) => ({
         ...state,
-        isLoading: true,
-        filter: { ...state.filter, query }
-      }))),
-      switchMap(() => this.getFilteredBooks$),
-    );
-
-  updateOrder$ = this.orderControl.valueChanges
-    .pipe(
-      takeUntilDestroyed(),
-      tap((order) => this.#state.update((state) => ({
-        ...state,
-        isLoading: true,
-        filter: { ...state.filter, order: order! }
-      }))),
-      switchMap(() => this.getFilteredBooks$),
-    );
+        books,
+        isLoading: false,
+      }))
+    )
+  );
 
   constructor() {
-    this.getFilteredBooks$.subscribe((books) => {
-      this.#state.update((state) => ({
-        ...state,
-        books,
-        isLoading: false,
-      }));
-    });
-
-    this.updateQuery$.subscribe((books) => {
-      this.#state.update((state) => ({
-        ...state,
-        books,
-        isLoading: false,
-      }));
-    });
-
-    this.updateOrder$.subscribe((books) => {
-      this.#state.update((state) => ({
-        ...state,
-        books,
-        isLoading: false,
-      }));
-    });
+    this.filterChanges$.subscribe();
   }
 }
