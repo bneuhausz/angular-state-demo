@@ -8,7 +8,7 @@ import { FormControl } from "@angular/forms";
 @Injectable()
 export class NativeFeaturesService {
   readonly #bookService = inject(BookService);
-  filterControl = new FormControl();
+  filterControl = new FormControl<string>('', { nonNullable: true });
   orderControl = new FormControl<'asc' | 'desc'>('asc', { nonNullable: true });
 
   readonly #state = signal<BooksState>({
@@ -26,7 +26,7 @@ export class NativeFeaturesService {
     this.filterControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      map((query: string) => ({ query }))
+      map(query => ({ query }))
     ),
     this.orderControl.valueChanges.pipe(
       map(order => ({ order }))
@@ -40,7 +40,7 @@ export class NativeFeaturesService {
       filter: { ...state.filter, ...filter }
     }))),
     switchMap(() => this.#bookService.loadBooks(this.filter())),
-    tap((books) =>
+    tap(books =>
       this.#state.update((state) => ({
         ...state,
         books,
