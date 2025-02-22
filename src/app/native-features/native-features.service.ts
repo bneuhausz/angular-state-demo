@@ -1,9 +1,14 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
-import { BooksState } from "../book-state";
 import { debounceTime, distinctUntilChanged, map, merge, startWith, switchMap, tap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BookService } from "../book.service";
 import { FormControl } from "@angular/forms";
+
+type BooksState = {
+  books: string[];
+  isLoading: boolean;
+  filter: { query: string; order: 'asc' | 'desc' };
+};
 
 @Injectable()
 export class NativeFeaturesService {
