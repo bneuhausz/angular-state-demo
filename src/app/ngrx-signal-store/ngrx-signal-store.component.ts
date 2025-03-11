@@ -9,8 +9,8 @@ import { BooksStore } from './books.store';
   providers: [BooksStore],
   template: `
     <p>
-    <input [formControl]="filterControl" />
-    <select [formControl]="orderControl">
+      <input [formControl]="filterControl" />
+      <select [formControl]="orderControl">
         <option value="asc">asc</option>
         <option value="desc">desc</option>
       </select>
